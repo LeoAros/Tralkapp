@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Tralkapp</string>
+    <string name="open">open</string>
+    <string name="close">close</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="seleccion_especie">Seleccione una especie</string>
+    <string name="telefono">+569XXXXXXXX</string>
+    <string name="mensaje">Cuerpo del mensaje...</string>
 </resources>

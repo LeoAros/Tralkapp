@@ -4,11 +4,11 @@ import android.content.ContentValues;
 
 import com.example.tralkapp.DB.Tablas;
 
-public class Animal {
+public class Tipo {
     private Integer id;
     private String nombre;
 
-    public Animal(Integer id, String nombre) {
+    public Tipo(Integer id, String nombre) {
         this.id = id;
         this.nombre = nombre;
     }

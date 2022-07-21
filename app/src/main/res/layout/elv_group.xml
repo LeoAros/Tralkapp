@@ -9,12 +9,13 @@
         android:id="@+id/tvGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/holo_blue_light"
+        android:background="@drawable/custom_border"
         android:padding="10dp"
-        android:textColor="@android:color/white"
+        android:textColor="@color/color_group"
+        android:textStyle="bold"
+        android:textSize="20dp"
+        android:text="Hola mundo"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
         tools:layout_editor_absoluteX="58dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

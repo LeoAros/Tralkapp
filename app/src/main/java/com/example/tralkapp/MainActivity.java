@@ -1,12 +1,24 @@
 package com.example.tralkapp;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ImageView;
@@ -14,100 +26,104 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.tralkapp.DB.DBHelper;
+import com.example.tralkapp.Fragments.ContactFragment;
+import com.example.tralkapp.Fragments.EjemplarFragment;
+import com.example.tralkapp.Fragments.MainFragment;
+import com.google.android.material.navigation.NavigationView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
-    DBHelper DB;
-    ImageView imgAnimal;
-    TextView txt1;
-    EditText edtMasa;
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
-    private ExpandableListView expLV;
-    private ExpLVAdapter adapter;
-    private ArrayList<String> listCategorias;
-    private Map<String, ArrayList<String>> mapChild;
+    DrawerLayout drawerLayout;
+    ActionBarDrawerToggle actionBarDrawerToggle;
+    Toolbar toolbar;
+    NavigationView navigationView;
+    Button btnLogout;
+    //variables para cargar el fragment
+    FragmentManager fragmentManager;
+    FragmentTransaction fragmentTransaction;
+
+    private DBHelper DB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        DB = new DBHelper(this);
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        drawerLayout = findViewById(R.id.drawer);
+        navigationView = findViewById(R.id.nav_view);
 
-        Cursor res = DB.getData("animal");
+        //establecer evento onclick al navigationview
+        navigationView.setNavigationItemSelectedListener(this);
+
+        actionBarDrawerToggle = new ActionBarDrawerToggle(this,drawerLayout,toolbar,R.string.open,R.string.close);
+        drawerLayout.addDrawerListener(actionBarDrawerToggle);
+        actionBarDrawerToggle.setDrawerIndicatorEnabled(true);
+        actionBarDrawerToggle.syncState();
+
+        //Cargar fragment principal
+        fragmentManager = getSupportFragmentManager();
+        fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.container,new MainFragment());
+        fragmentTransaction.commit();
+
+        TextView profileName = navigationView.getHeaderView(0).findViewById(R.id.textNombre);
+        TextView profileEmail = navigationView.getHeaderView(0).findViewById(R.id.textCorreo);
+        TextView profileRol = navigationView.getHeaderView(0).findViewById(R.id.tvRol);
+
+        SessionManagement sessionManagement = new SessionManagement(MainActivity.this);
+        int userID = sessionManagement.getSession();
+
+        DB = new DBHelper(getApplicationContext());
+        Cursor res = DB.getDatosUser(userID);
         res.moveToFirst();
 
-        txt1 =findViewById(R.id.textAnimal);
-        txt1.setText(res.getString(1));
+        profileName.setText(res.getString(1)+" "+res.getString(2));
+        profileEmail.setText(res.getString(3));
+        profileRol.setText(res.getString(4));
+        btnLogout = navigationView.getHeaderView(0).findViewById(R.id.btnLogout);
 
-        edtMasa = findViewById(R.id.edtMasa);
-
-        imgAnimal = findViewById(R.id.imgAnimal);
-        imgAnimal.setImageResource(R.drawable.huemul);
-
-        //expandible LV
-        expLV = (ExpandableListView) findViewById(R.id.expLV);
-        listCategorias = new ArrayList<>();
-        mapChild = new HashMap<>();
-
-        cargarDatos(res.getInt(0),0);
-
-        edtMasa.addTextChangedListener(new TextWatcher() {
+        btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if(!edtMasa.getText().toString().isEmpty()){
-                    listCategorias.clear();
-                    cargarDatos(res.getInt(0),Double.parseDouble(edtMasa.getText().toString()));
-                }else{
-                    listCategorias.clear();
-                    cargarDatos(res.getInt(0),0);
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-
+            public void onClick(View view) {
+                SessionManagement sessionManagement = new SessionManagement(MainActivity.this);
+                sessionManagement.removeSession();
+                //move to login
+                Intent intent = new Intent(MainActivity.this,LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
             }
         });
-
-        
     }
 
-    private void cargarDatos(int id,double masa){
-
-        Cursor res = DB.getProcesos(id);
-
-        while(res.moveToNext()){
-            listCategorias.add(res.getString(1));
-            Cursor resultado = DB.getDosificacion(res.getInt(0));
-            ArrayList<String> list = new ArrayList<>();
-            while (resultado.moveToNext()){
-                if(masa != 0){
-                    list.add(resultado.getString(4)+": "+dosificacion(masa,resultado.getString(2),resultado.getString(3))+"ml");
-                }else {
-                    list.add(resultado.getString(4));
-                }
-            }
-            int lastId = listCategorias.size() - 1;
-            mapChild.put(listCategorias.get(lastId), list);
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        drawerLayout.closeDrawer(GravityCompat.START);
+        if(item.getItemId() == R.id.nav_home){
+            fragmentManager = getSupportFragmentManager();
+            fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.container,new MainFragment());
+            fragmentTransaction.commit();
+        }
+        if(item.getItemId() == R.id.nav_profile){
+            fragmentManager = getSupportFragmentManager();
+            fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.container,new EjemplarFragment());
+            fragmentTransaction.commit();
+        }
+        if(item.getItemId() == R.id.nav_contact){
+            fragmentManager = getSupportFragmentManager();
+            fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.container,new ContactFragment());
+            fragmentTransaction.commit();
         }
 
-        adapter = new ExpLVAdapter(this, listCategorias, mapChild);
-        expLV.setAdapter(adapter);
+        return false;
     }
 
-    private Double dosificacion(double masa,String StrConcentracion,String StrDosis){
-        Double concentracion = Double.parseDouble(StrConcentracion);
-        Double dosis = Double.parseDouble(StrDosis);
-        Double resultado = (masa*dosis)/concentracion;
-        return resultado;
-    }
 }
